@@ -27,16 +27,19 @@ exports.createUser = async (req, res) => {
   try {
     const { email, name, phoneNumber, password } = req.body;
 
+    if (!password || password.length < 8) {
+          return errorResponse(res, { message: "Password must be at least 8 characters long." }, 400);
+
+    }
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return errorResponse(res, { message: "Email already in use" }, 400);
     }
 
-    const hashedPassword = await argon2.hash(password);
     const user = await User.create({
       name,
       phoneNumber,
-      password: hashedPassword,
+      password,
       email,
     });
 
@@ -115,12 +118,9 @@ exports.getAllUsers = async (req, res) => {
 exports.updateCurrentUser = async (req, res) => {
   try {
     const id = req.user.id;
-    const allowedFields = ["name", "phoneNumber"];
     const updateData = {};
 
-    allowedFields.forEach((field) => {
-      if (req.body[field]) updateData[field] = req.body[field];
-    });
+      ["password", "email", "id"].forEach((field) => delete updates[field]);
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -142,12 +142,10 @@ exports.updateCurrentUser = async (req, res) => {
 exports.updateUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const allowedFields = ["name", "phoneNumber", "status", "role"];
     const updateData = {};
 
-    allowedFields.forEach((field) => {
-      if (req.body[field]) updateData[field] = req.body[field];
-    });
+    ["password", "email", "id"].forEach((field) => delete updates[field]);
+
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -201,14 +199,13 @@ exports.loginUser = async (req, res) => {
       return errorResponse(res, { message: "Invalid email or password" }, 400);
     }
 
-        console.log("user:", user.password);
-        console.log("password:", password);
+   
         
 
     // Verify password
-    const isPasswordValid = await argon2.verify(user.password, password);
+      const validPassword = await argon2.verify(user.password, password);
     
-    if (!isPasswordValid) {
+    if (!validPassword) {
       return errorResponse(res, { message: "Invalid email or password" }, 400);
     }
 
@@ -222,3 +219,109 @@ exports.loginUser = async (req, res) => {
     return errorResponse(res, { message: "Internal server error" }, 500);
   }
 };
+
+
+
+
+/**
+ * Update password for the current user
+ */
+
+exports.updatePassword = async (req, res) => {
+  try {
+    const { password,email } = req.body;
+
+    if (!password || password.length < 8) {
+          return errorResponse(res, { message: "Password must be at least 8 characters long." }, 400);
+
+    }
+
+    const user = await User.findOne({
+      where: {  email },
+    });
+    if (!user) {
+    return errorResponse(res, { message: "User not found"  }, 400);
+    }
+
+    await user.update({ password: password });
+    return successResponse(res, { user: user.role }, "Password updated successfully", 200);
+
+   
+  } catch (error) {
+    console.error("Update password error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+
+
+
+
+/**
+ * Update transcation pin for the current user
+ */
+
+exports.updateTranscationPin = async (req, res) => {
+  try {
+        const id = req.user.id;
+    const { transactionPin } = req.body;
+ if (!transactionPin || transactionPin.length > 4 || transactionPin.length < 4) {
+          return errorResponse(res, { message: "Transcation Pin not correct" }, 400);
+
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+    return errorResponse(res, { message: "User not found"  }, 400);
+    }
+
+    await user.update({ transactionPin: transactionPin });
+    return successResponse(res, { user: user.role }, "Transcation Pin Set", 200);
+
+   
+  } catch (error) {
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+
+
+
+
+/**
+ * Reusable function to verify a user's transaction pin
+ * @param {string} pin - The transaction pin to verify
+ * @param {string|number} userId - The ID of the user
+ * @returns {Promise<boolean>} - Returns true if the pin is correct, otherwise false
+ */
+ exports.verifyTransactionPin = async (pin, userId) => {
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user || !user.transactionPin) {
+      return false;
+    }
+
+    return user.transactionPin === pin;
+  } catch (error) {
+    console.error("verifyTransactionPin error:", error);
+    return false;
+  }
+};
+
+
+ exports.verifyUserBalance = async (userId) => {
+  try {
+    const user = await User.findByPk(userId);
+    
+
+    
+
+    return user.totalFund;
+  } catch (error) {
+    console.error("verifyTransactionPin error:", error);
+    return false;
+  }
+};
+
+

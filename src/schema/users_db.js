@@ -118,8 +118,9 @@ const User = sequelize.define(
 // Lifecycle hooks
 User.beforeCreate(async (user) => {
   if (user.password) {
-    user.password = await argon2.hash(user.password);
-  }
+     const hashedPassword = await argon2.hash(user.password);
+        user.password = hashedPassword;
+        }
   if (user.transactionPin) {
     user.transactionPin = await argon2.hash(user.transactionPin);
   }

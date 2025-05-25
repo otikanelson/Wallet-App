@@ -39,6 +39,15 @@ routerUser.get(
   userController.getCurrentUser
 );
 routerUser.patch(
+  "/change-password",
+  userController.updatePassword
+);
+routerUser.patch(
+  "/transaction-pin",
+   verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  userController.updateTranscationPin
+);
+routerUser.patch(
   "/user",
  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
   userController.updateCurrentUser
