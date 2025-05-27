@@ -318,7 +318,7 @@ exports.updateTranscationPin = async (req, res) => {
     
 
     return user.totalFund;
-  } catch (error) {
+  } catch (error) { 
     console.error("verifyTransactionPin error:", error);
     return false;
   }
