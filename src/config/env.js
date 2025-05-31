@@ -10,5 +10,7 @@ module.exports = {
   MAILEMAIL:process.env.MAILEMAIL,
   MAILHOST:process.env.MAILHOST,
   MAILPASSWORD:process.env.MAILPASSWORD,
+  PUBLIC_KEY_USER:process.env.PUBLIC_KEY,
+  SECRET_KEY_USER:process.env.SECRET_KEY,
 
 };
