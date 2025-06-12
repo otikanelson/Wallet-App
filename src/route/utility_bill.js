@@ -20,6 +20,28 @@ routerUtility.post(
   verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
   utilityController.createUserUtilityData
 );
+routerUtility.post(
+  "/verify-electricity-bill",
+//  createUtilityValidator,
+// handleValidationErrors,
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.verifyElectricityBill
+);
+routerUtility.post(
+  "/buy-electricity-bill",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.buyElectricityBill
+);
+routerUtility.post(
+  "/buy-tv-bill",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.buyTVBill
+);
+routerUtility.post(
+  "/verify-tv-biller",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.validateTvBiller
+);
 
 routerUtility.get(
   "/transactions",
@@ -27,9 +49,29 @@ routerUtility.get(
   utilityController.getUserTransactions
 );
 routerUtility.get(
+  "/get-eletricity-available",
+ verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.getAvailableEletricity
+);
+routerUtility.get(
+  "/get-tv-available",
+ verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.getAvailableTV
+);
+routerUtility.get(
+  "/get-tv-available-one/:provider",
+ verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.getAvailableTVOne
+);
+routerUtility.get(
   "/get-data-available",
  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
   utilityController.getData
+);
+routerUtility.get(
+  "/get-eletricity-available",
+ verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  utilityController.getAvailableEletricity
 );
 routerUtility.get(
   "/transactions-all-admin",

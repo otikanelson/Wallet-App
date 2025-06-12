@@ -1,8 +1,11 @@
-const { errorResponse, successResponse } = require("../middleware/response_handler.JS");
+const { errorResponse, successResponse } = require("../middleware/response_handler");
 const { User } = require("../model/assocations");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, TOKENDATE } = require("../config/env");
 const argon2 = require("argon2");
+const { sendMail } = require("../config/send_mail");
+const { encryptData, deEncryption } = require("../middleware/encrptions");
+
 
 /**
  * Generates a JWT token for a user
@@ -23,6 +26,49 @@ const generateToken = (user) => {
 /**
  * Register a new user
  */
+
+
+
+
+exports.verifyOTP = async (req, res) => {
+    try {
+      const { token, pin } = req.body;
+      const decrypted = await deEncryption(token);
+
+      if (decrypted.message !== pin) {
+        return errorResponse(res, "Incorrect Verification", 404);
+      }
+  
+      return successResponse(res, "Code verified", "Code verified", 200);
+    } catch (error) {
+      return errorResponse(res, error, 500);
+    }
+  };
+
+
+exports.sendOTP = async (req, res) => {
+    try {
+      const { email } = req.body;
+      const generateOtp = `${Math.floor(1000 + Math.random() * 9000)}`;
+  
+      const htmlEmail = `
+      <html>
+        <body>
+          <h2>Your OTP is: ${generateOtp}</h2>
+          <p>Enter this OTP to verify your account.</p>
+        </body>
+      </html>`;
+  
+      await sendMail(email, "VTU", htmlEmail);
+      const encryptedOtp = await encryptData(generateOtp);
+  
+      return successResponse(res, encryptedOtp, "Mail sent Successfully", 200);
+    } catch (error) {
+      return errorResponse(res, error, 500);
+    }
+  };
+
+
 exports.createUser = async (req, res) => {
   try {
     const { email, name, phoneNumber, password } = req.body;
@@ -82,7 +128,7 @@ exports.getCurrentUser = async (req, res) => {
     const id = req.user.id;
 
     const user = await User.findByPk(id, {
-      attributes: { exclude: ["password", "transactionPin"] },
+      attributes: { exclude: ["password"] },
     });
 
     if (!user) {

@@ -26,7 +26,7 @@ async function sendMail(email, title, html) {
 
     try {
         await transporter.sendMail({
-            from: '"ILLMI" <info@cfc.cfcterminalapp.xyz>',
+            from: '"CFC" <info@cfc.cfcterminalapp.xyz>',
             to: email,
             subject: title,
             text: "", 
@@ -38,5 +38,5 @@ async function sendMail(email, title, html) {
     }
 }
 
-module.exports = sendMail;
+module.exports = {sendMail};
  

@@ -1,5 +1,5 @@
 /**
- * Express server setup for the TMS backend API
+ * Express server setup for the VTU backend API
  * @module app
  */
 require('dotenv').config();
@@ -151,15 +151,15 @@ app.get(
       }
 
       const apiMetadata = {
-        name: process.env.API_NAME || 'TMS API',
+        name: process.env.API_NAME || 'VTU API',
         version: process.env.API_VERSION || '1.0.0',
-        description: process.env.API_DESCRIPTION || 'API for TMS ride-sharing platform',
+        description: process.env.API_DESCRIPTION || 'API for VTU ride-sharing platform',
         environment: process.env.NODE_ENV || 'development',
         endpoints: {
           health: `${apiPrefix}/health`,
           metrics: `${apiPrefix}/metrics`,
           users: `${apiPrefix}/users`,
-          documentation: process.env.API_DOCS_URL || 'https://api.TMS.com/docs',
+          documentation: process.env.API_DOCS_URL || 'https://api.vtu.com/docs',
         }, 
         timestamp: new Date().toISOString(),
       };
@@ -195,7 +195,7 @@ app.get(
         `);
       } else {
         res.status(200).json({
-          message: process.env.WELCOME_MESSAGE || 'Welcome to the TMS API!',
+          message: process.env.WELCOME_MESSAGE || 'Welcome to the VTU API!',
           ...apiMetadata,
         });
       }

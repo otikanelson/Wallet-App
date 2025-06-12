@@ -55,9 +55,18 @@ routerUser.patch(
 routerUser.get(
   "/user-all",
  verifyToken(["admin", "basic-admin", "standard-admin"], ["verified", "active"]) ,
-  userController.getAllUsers
+userController.getAllUsers
 );
 
+
+routerUser.post(
+  "/send-otp",
+  userController.sendOTP
+);
+routerUser.post(
+  "/verify-otp",
+  userController.verifyOTP
+);
 
 
 
