@@ -14,6 +14,8 @@ const { errorResponse } = require('./src/middleware/response_handler');
 const sequelize = require('./src/config/db');
 const routerUser = require('./src/route/user_route');
 const routerUtility = require('./src/route/utility_bill');
+const routerPayment = require('./src/route/payment_route');
+
 
 // In-memory cache for geolocation data
 
@@ -97,18 +99,7 @@ app.use(compression());
 // CORS configuration
 const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) || ['http://localhost:3000'];
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || corsOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS policy violation'));
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  })
+  cors()
 );
 
 // Rate limiting
@@ -132,6 +123,7 @@ app.use((req, res, next) => {
 const apiPrefix = process.env.API_PREFIX || '/api/v1';
 app.use(apiPrefix, routerUser);
 app.use(apiPrefix, routerUtility);
+app.use(apiPrefix, routerPayment);
 
 
 /**
