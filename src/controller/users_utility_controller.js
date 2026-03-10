@@ -15,7 +15,7 @@ exports.createUserUtilityAirtime = async (req, res) => {
   try {
     // Validate user ID
     const userId = req.user?.id;
-   
+    console.log('Airtime purchase request:', { userId, body: req.body });
 
     // Sanitize and validate input
     const { amountRecharge, pin, phoneNumber, network, service } = req.body;
@@ -63,8 +63,13 @@ exports.createUserUtilityAirtime = async (req, res) => {
       return errorResponse(res, { message: 'User not found' }, 404);
     }
 
+    // Check if user has transaction PIN
+    if (!user.transactionPin) {
+      return errorResponse(res, { message: 'Please set your transaction PIN first' }, 400);
+    }
+
     // Verify PIN
-      const tranPin = await argon2.verify(user.transactionPin, sanitizedPin);
+    const tranPin = await argon2.verify(user.transactionPin, sanitizedPin);
 
     if (!tranPin) {
       return errorResponse(res, { message: 'Incorrect transaction PIN' }, 403);
@@ -85,7 +90,7 @@ exports.createUserUtilityAirtime = async (req, res) => {
 
       if (currentAmount.lt(sanitizedAmount)) {
         await t.rollback();
-        return errorResponse(res, { message: 'Insufficient balance' }, 400);
+        return errorResponse(res, { message: `Insufficient balance. Current: ₦${currentAmount.toNumber()}, Required: ₦${sanitizedAmount.toNumber()}` }, 400);
       }
 
       const updatedFund = currentAmount.minus(sanitizedAmount);
@@ -96,6 +101,13 @@ exports.createUserUtilityAirtime = async (req, res) => {
         { transaction: t }
       );
 
+      console.log('Calling SageCloud API for airtime purchase:', {
+        network: sanitizedNetwork,
+        service: sanitizedService,
+        phone: sanitizedPhone,
+        amount: sanitizedAmount.toString()
+      });
+
       // Call purchaseAirtime
       const airtimeResponse = await purchaseAirtime(
         sanitizedNetwork,
@@ -104,9 +116,13 @@ exports.createUserUtilityAirtime = async (req, res) => {
         sanitizedAmount.toString()
       );
 
+      console.log('SageCloud airtime response:', airtimeResponse);
+
       if (!airtimeResponse || airtimeResponse.status !== 'success') {
         await t.rollback();
-        return errorResponse(res, { message: 'Airtime purchase failed' }, 500);
+        const errorMsg = airtimeResponse?.message || 'Airtime purchase failed';
+        console.error('Airtime purchase failed:', errorMsg);
+        return errorResponse(res, { message: errorMsg }, 500);
       }
 
       // Create transaction record
@@ -144,13 +160,15 @@ exports.createUserUtilityAirtime = async (req, res) => {
 
     } catch (error) {
       await t.rollback();
-      
-      return errorResponse(res, { message: error.message }, 500);
+      console.error('Airtime purchase transaction error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Airtime purchase failed';
+      return errorResponse(res, { message: errorMessage }, 500);
     }
 
   } catch (error) {
-    
-    return errorResponse(res, { message: error.message }, 500);
+    console.error('Airtime purchase error:', error);
+    const errorMessage = error.response?.data?.message || error.message || 'Internal server error';
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
@@ -534,16 +552,17 @@ exports.getData = async (req, res) => {
    let t = await getDataAvailable(network);
 
    
-    // Prepare response
+    // Prepare response - extract data from the utility response
     const response = {
-      message: "Avaliable fetched successfully",
-      data: t,
+      message: "Available fetched successfully",
+      data: t.data || t, // Use t.data if available, otherwise use t
     };
 
     return successResponse(res, response, 200);
   } catch (error) {
-    
-    return errorResponse(res, { message: "Internal server error" }, 500);
+    console.error("Get data plans error:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to fetch data plans";
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
@@ -554,60 +573,57 @@ exports.validateTvBiller = async (req, res) => {
       return errorResponse(res, { message: 'Biller ID and Smart Card Number are required' }, 400);
     }
 
-    
-
     // Call the validation function
     let t = await validateTVBiller(billerId, smartCardNo);
 
     // Prepare response
     const response = {
-      message: "Avaliable fetched successfully",
+      message: "Available fetched successfully",
       data: t,
     };
 
     return successResponse(res, response, 200);
   } catch (error) {
-    
-    return errorResponse(res, { message: "Internal server error" }, 500);
+    console.error("Validate TV biller error:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to verify smart card";
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
 exports.getAvailableEletricity = async (req, res) => {
   try {
-    // Validate user ID
-
     let t = await getDataElectricity();
 
-    // Prepare response
+    // Prepare response - extract data from the utility response
     const response = {
-      message: "Avaliable fetched successfully",
-      data: t,
+      message: "Available fetched successfully",
+      data: t.data || t, // Use t.data if available, otherwise use t
     };
 
     return successResponse(res, response, 200);
   } catch (error) {
-    
-    return errorResponse(res, { message: "Internal server error" }, 500);
+    console.error("Get electricity providers error:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to fetch electricity providers";
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
 
 exports.getAvailableTV = async (req, res) => {
   try {
-    // Validate user ID
-
     let t = await getDataTV();
 
-    // Prepare response
+    // Prepare response - extract data from the utility response
     const response = {
-      message: "Avaliable fetched successfully",
-      data: t,
+      message: "Available fetched successfully",
+      data: t.data || t, // Use t.data if available, otherwise use t
     };
 
     return successResponse(res, response, 200);
   } catch (error) {
-    
-    return errorResponse(res, { message: "Internal server error" }, 500);
+    console.error("Get TV providers error:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to fetch TV providers";
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
@@ -616,33 +632,28 @@ exports.getAvailableTVOne = async (req, res) => {
   try {
     const { provider } = req.params;
 
-    // Validate user ID
-
     let t = await getDataTVOne(provider);
 
-    // Prepare response
+    // Prepare response - extract data from the utility response
     const response = {
-      message: "Avaliable fetched successfully",
-      data: t,
+      message: "Available fetched successfully",
+      data: t.data || t, // Use t.data if available, otherwise use t
     };
 
     return successResponse(res, response, 200);
   } catch (error) {
-    
-    return errorResponse(res, { message: "Internal server error" }, 500);
+    console.error("Get TV packages error:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to fetch TV packages";
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
 exports.verifyElectricityBill = async (req, res) => {
   try {
-
     const { billerCode, meterNumber } = req.body;
     if (!billerCode || !meterNumber) {
       return errorResponse(res, { message: 'Biller code and meter number are required' }, 400);
     }
-
-    // Validate user ID
-
 
     let t = await validateElectricityBiller(
       billerCode,
@@ -657,8 +668,9 @@ exports.verifyElectricityBill = async (req, res) => {
 
     return successResponse(res, response, 200);
   } catch (error) {
-    
-    return errorResponse(res, { message: "Internal server error" }, 500);
+    console.error("Verify electricity bill error:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to verify meter";
+    return errorResponse(res, { message: errorMessage }, 500);
   }
 };
 
@@ -973,3 +985,194 @@ exports.getAllTransactions = async (req, res) => {
 };
 // Utility function for consistent success response
 
+
+
+
+/**
+ * Get single transaction details
+ */
+exports.getTransactionDetails = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { transactionId } = req.params;
+
+    if (!transactionId) {
+      return errorResponse(res, { message: "Transaction ID is required" }, 400);
+    }
+
+    // Fetch transaction
+    const transaction = await Transactions.findOne({
+      where: { 
+        id: transactionId,
+        userId // Ensure user can only see their own transactions
+      },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email"],
+        },
+      ],
+    });
+
+    if (!transaction) {
+      return errorResponse(res, { message: "Transaction not found" }, 404);
+    }
+
+    return successResponse(res, { transaction }, "Transaction details fetched successfully", 200);
+  } catch (error) {
+    console.error("Get transaction details error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+
+/**
+ * Get user transactions with filtering
+ */
+exports.getUserTransactionsFiltered = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    // Check if user exists
+    const user = await User.findByPk(userId, {
+      attributes: ["id"],
+    });
+    if (!user) {
+      return errorResponse(res, { message: "User not found" }, 404);
+    }
+
+    // Get pagination and filter parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    const { type, status, network, startDate, endDate, search } = req.query;
+
+    // Build where clause
+    const whereClause = { userId };
+
+    if (type) {
+      whereClause.type = type;
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (network) {
+      whereClause.network = network;
+    }
+
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) {
+        whereClause.createdAt[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        whereClause.createdAt[Op.lte] = new Date(endDate);
+      }
+    }
+
+    if (search) {
+      whereClause[Op.or] = [
+        { phoneNumber: { [Op.like]: `%${search}%` } },
+        { reference: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // Fetch transactions with filters
+    const { count, rows: transactions } = await Transactions.findAndCountAll({
+      where: whereClause,
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email"],
+        },
+      ],
+      attributes: [
+        "id",
+        "amount",
+        "type",
+        "status",
+        "network",
+        "phoneNumber",
+        "reference",
+        "description",
+        "createdAt",
+      ],
+    });
+
+    const response = {
+      message: "Transactions fetched successfully",
+      data: {
+        transactions,
+        pagination: {
+          total: count,
+          page,
+          limit,
+          totalPages: Math.ceil(count / limit),
+        },
+        filters: {
+          type,
+          status,
+          network,
+          startDate,
+          endDate,
+          search
+        }
+      },
+    };
+
+    return successResponse(res, response, 200);
+  } catch (error) {
+    console.error("Get filtered transactions error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+
+/**
+ * Get recent beneficiaries (unique phone numbers from recent transactions)
+ */
+exports.getRecentBeneficiaries = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const limit = parseInt(req.query.limit) || 10;
+    const { type } = req.query; // Optional: filter by transaction type
+
+    const whereClause = { 
+      userId,
+      status: 'COMPLETED' // Only successful transactions
+    };
+
+    if (type) {
+      whereClause.type = type;
+    }
+
+    // Get unique phone numbers from recent transactions
+    const transactions = await Transactions.findAll({
+      where: whereClause,
+      attributes: [
+        'phoneNumber',
+        'network',
+        'type',
+        [User.sequelize.fn('MAX', User.sequelize.col('createdAt')), 'lastUsed']
+      ],
+      group: ['phoneNumber', 'network', 'type'],
+      order: [[User.sequelize.literal('lastUsed'), 'DESC']],
+      limit,
+      raw: true
+    });
+
+    return successResponse(res, { beneficiaries: transactions }, "Recent beneficiaries fetched successfully", 200);
+  } catch (error) {
+    console.error("Get recent beneficiaries error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};

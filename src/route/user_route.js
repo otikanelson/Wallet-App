@@ -42,6 +42,11 @@ routerUser.patch(
   "/change-password",
   userController.updatePassword
 );
+routerUser.get(
+  "/transaction-pin/check",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]),
+  userController.checkTransactionPin
+);
 routerUser.patch(
   "/transaction-pin",
    verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
@@ -71,3 +76,35 @@ routerUser.post(
 
 
 module.exports = routerUser;
+
+
+// Refresh token
+routerUser.post(
+  "/refresh-token",
+  userController.refreshToken
+);
+
+// Forgot password flow
+routerUser.post(
+  "/forgot-password",
+  userController.forgotPassword
+);
+
+routerUser.post(
+  "/reset-password",
+  userController.resetPasswordWithOTP
+);
+
+// Push token
+routerUser.patch(
+  "/push-token",
+  verifyToken(["admin", "basic-admin", "standard-admin", "user"], ["verified", "active"]),
+  userController.updatePushToken
+);
+
+// Profile picture
+routerUser.patch(
+  "/profile-picture",
+  verifyToken(["admin", "basic-admin", "standard-admin", "user"], ["verified", "active"]),
+  userController.uploadProfilePicture
+);

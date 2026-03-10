@@ -12,6 +12,8 @@ const rateLimit = require('express-rate-limit');
 const { query, validationResult } = require('express-validator');
 const { errorResponse } = require('./src/middleware/response_handler');
 const sequelize = require('./src/config/db');
+// Import models and associations BEFORE sync
+const { User, Transactions } = require('./src/model/assocations');
 const routerUser = require('./src/route/user_route');
 const routerUtility = require('./src/route/utility_bill');
 const routerPayment = require('./src/route/payment_route');
@@ -47,10 +49,14 @@ morgan.token('location', (req) => {
  */
 const initializeDatabase = async () => {
   try {
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
+    
     await sequelize.sync({ force: false });
-    console.log('✅ Database connected successfully');
+    console.log('✅ Database tables synced successfully');
+    console.log('📊 Models registered:', Object.keys(sequelize.models).join(', '));
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
+    console.error('❌ Database initialization failed:', error.message);
     process.exit(1);
   }
 };

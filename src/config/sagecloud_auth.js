@@ -9,6 +9,10 @@ const SECRET_KEY = SECRET_KEY_USER; // Replace with your actual secret key
 
 async function getSagecloudToken() {
     try {
+        console.log('Getting SageCloud token...');
+        console.log('Public Key:', PUBLIC_KEY);
+        console.log('API URL:', API_URL);
+        
         // Create Basic Auth header
         const authString = `${PUBLIC_KEY}:${SECRET_KEY}`;
         const encodedAuth = base64.encode(authString);
@@ -23,16 +27,29 @@ async function getSagecloudToken() {
             }
         });
 
+        console.log('SageCloud auth response:', response.data);
+
         // Handle successful response
         if (response.status === 200) {
             const { success, data } = response.data;
             if (success) {
-                console.log('Business Name:', data.business_name);
-                return data.token;
+                // The token is nested: data.token.access_token
+                const accessToken = data.token?.access_token || data.token;
+                console.log('Token obtained successfully');
+                console.log('Token type:', typeof accessToken);
+                return { access_token: accessToken };
             }
         }
+        
+        throw new Error('Failed to get access token');
     } catch (error) {
         // Handle errors
+        console.error('SageCloud auth error:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        
         if (error.response && error.response.status === 401) {
             console.error('Authentication failed: Invalid Credentials');
         } else {
@@ -41,17 +58,6 @@ async function getSagecloudToken() {
         throw error;
     }
 }
-
-// Example usage
- getSagecloudToken()
-    .then(token => {
-
-        // Use the token for subsequent API requests
-        // Example: Authorization: Bearer ${token.access_token}
-    })
-    .catch(error => {
-        // Handle errors as needed
-    });
 
 // Export the function for use in other modules
 

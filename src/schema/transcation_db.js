@@ -9,7 +9,14 @@ const Transactions = sequelize.define(
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-    
+      userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id'
+        }
+      },
       amount: {
         type: DataTypes.STRING,
         allowNull: false,

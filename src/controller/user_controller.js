@@ -24,6 +24,21 @@ const generateToken = (user) => {
 };
 
 /**
+ * Generates a refresh token for a user
+ */
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    {
+      email: user.email,
+      id: user.id,
+    },
+    JWT_SECRET,
+    { expiresIn: '7d' } // Refresh token valid for 7 days
+  );
+};
+
+
+/**
  * Register a new user
  */
 
@@ -90,8 +105,9 @@ exports.createUser = async (req, res) => {
     });
 
     const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    return successResponse(res, token, "User registered successfully", 201);
+    return successResponse(res, { token, refreshToken }, "User registered successfully", 201);
   } catch (error) {
     console.error("User registration error:", error);
     return errorResponse(res, { message: "Internal server error" }, 500);
@@ -164,9 +180,9 @@ exports.getAllUsers = async (req, res) => {
 exports.updateCurrentUser = async (req, res) => {
   try {
     const id = req.user.id;
-    const updateData = {};
+    const updateData = { ...req.body };
 
-      ["password", "email", "id"].forEach((field) => delete updates[field]);
+    ["password", "email", "id"].forEach((field) => delete updateData[field]);
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -188,9 +204,9 @@ exports.updateCurrentUser = async (req, res) => {
 exports.updateUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = {};
+    const updateData = { ...req.body };
 
-    ["password", "email", "id"].forEach((field) => delete updates[field]);
+    ["password", "email", "id"].forEach((field) => delete updateData[field]);
 
 
     const user = await User.findByPk(id);
@@ -255,11 +271,12 @@ exports.loginUser = async (req, res) => {
       return errorResponse(res, { message: "Invalid email or password" }, 400);
     }
 
-    // Generate token
+    // Generate tokens
     const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    // Respond with token and role
-    return successResponse(res, { token, role: user.role }, "Login successful", 200);
+    // Respond with tokens and role
+    return successResponse(res, { token, refreshToken, role: user.role }, "Login successful", 200);
   } catch (error) {
     console.error("Login error:", error);
     return errorResponse(res, { message: "Internal server error" }, 500);
@@ -307,25 +324,65 @@ exports.updatePassword = async (req, res) => {
  * Update transcation pin for the current user
  */
 
+/**
+ * Check if user has transaction PIN set
+ */
+exports.checkTransactionPin = async (req, res) => {
+  try {
+    const id = req.user.id;
+
+    const user = await User.findByPk(id, {
+      attributes: ['id', 'transactionPin'],
+    });
+
+    if (!user) {
+      return errorResponse(res, { message: "User not found" }, 404);
+    }
+
+    const hasPIN = !!user.transactionPin;
+    return successResponse(res, { hasPIN }, "PIN status retrieved", 200);
+  } catch (error) {
+    console.error("Check transaction PIN error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+/**
+ * Update or set transaction PIN
+ */
 exports.updateTranscationPin = async (req, res) => {
   try {
-        const id = req.user.id;
-    const { transactionPin } = req.body;
- if (!transactionPin || transactionPin.length > 4 || transactionPin.length < 4) {
-          return errorResponse(res, { message: "Transcation Pin not correct" }, 400);
+    const id = req.user.id;
+    const { transactionPin, oldPin } = req.body;
 
+    if (!transactionPin || transactionPin.length !== 4) {
+      return errorResponse(res, { message: "Transaction PIN must be 4 digits" }, 400);
     }
 
     const user = await User.findByPk(id);
     if (!user) {
-    return errorResponse(res, { message: "User not found"  }, 400);
+      return errorResponse(res, { message: "User not found" }, 404);
     }
 
-    await user.update({ transactionPin: transactionPin });
-    return successResponse(res, { user: user.role }, "Transcation Pin Set", 200);
+    // If user already has a PIN, verify the old PIN
+    if (user.transactionPin) {
+      if (!oldPin) {
+        return errorResponse(res, { message: "Old PIN is required to change PIN" }, 400);
+      }
 
-   
+      const isOldPinValid = await argon2.verify(user.transactionPin, oldPin);
+      if (!isOldPinValid) {
+        return errorResponse(res, { message: "Incorrect old PIN" }, 403);
+      }
+    }
+
+    // Let the beforeUpdate hook handle hashing automatically
+    await user.update({ transactionPin });
+    
+    const message = user.transactionPin ? "Transaction PIN changed successfully" : "Transaction PIN set successfully";
+    return successResponse(res, {}, message, 200);
   } catch (error) {
+    console.error("Update transaction PIN error:", error);
     return errorResponse(res, { message: "Internal server error" }, 500);
   }
 };
@@ -348,7 +405,7 @@ exports.updateTranscationPin = async (req, res) => {
       return false;
     }
 
-    return user.transactionPin === pin;
+    return await argon2.verify(user.transactionPin, pin);
   } catch (error) {
     console.error("verifyTransactionPin error:", error);
     return false;
@@ -371,3 +428,190 @@ exports.updateTranscationPin = async (req, res) => {
 };
 
 
+
+
+
+/**
+ * Refresh access token using refresh token
+ */
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return errorResponse(res, { message: "Refresh token is required" }, 400);
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, JWT_SECRET);
+
+    // Fetch user
+    const user = await User.findByPk(decoded.id);
+    if (!user) {
+      return errorResponse(res, { message: "User not found" }, 404);
+    }
+
+    // Generate new access token
+    const newToken = generateToken(user);
+
+    return successResponse(res, { token: newToken }, "Token refreshed successfully", 200);
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return errorResponse(res, { message: "Invalid or expired refresh token" }, 401);
+  }
+};
+
+
+/**
+ * Update push notification token
+ */
+exports.updatePushToken = async (req, res) => {
+  try {
+    const id = req.user.id;
+    const { pushToken } = req.body;
+
+    if (!pushToken) {
+      return errorResponse(res, { message: "Push token is required" }, 400);
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return errorResponse(res, { message: "User not found" }, 404);
+    }
+
+    await user.update({ pushToken });
+
+    return successResponse(res, { pushToken }, "Push token updated successfully", 200);
+  } catch (error) {
+    console.error("Update push token error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+
+/**
+ * Upload profile picture
+ */
+exports.uploadProfilePicture = async (req, res) => {
+  try {
+    const id = req.user.id;
+    const { profilePicture } = req.body;
+
+    if (!profilePicture) {
+      return errorResponse(res, { message: "Profile picture is required" }, 400);
+    }
+
+    // Validate base64 format
+    if (!profilePicture.startsWith('data:image/')) {
+      return errorResponse(res, { message: "Invalid image format" }, 400);
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return errorResponse(res, { message: "User not found" }, 404);
+    }
+
+    // Upload to Cloudinary
+    const { uploadImage, deleteImage } = require('../config/cloudinary');
+    
+    // Delete old image if it exists and is from Cloudinary
+    if (user.profilePicture && user.profilePicture.includes('cloudinary.com')) {
+      try {
+        await deleteImage(user.profilePicture);
+      } catch (error) {
+        console.error('Error deleting old image:', error);
+        // Continue even if delete fails
+      }
+    }
+
+    // Upload new image
+    const cloudinaryUrl = await uploadImage(profilePicture, 'profile-pictures');
+
+    // Update user with Cloudinary URL
+    await user.update({ profilePicture: cloudinaryUrl });
+
+    return successResponse(res, { profilePicture: cloudinaryUrl }, "Profile picture updated successfully", 200);
+  } catch (error) {
+    console.error("Upload profile picture error:", error);
+    return errorResponse(res, { message: error.message || "Internal server error" }, 500);
+  }
+};
+
+
+/**
+ * Initiate forgot password - sends OTP
+ */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return errorResponse(res, { message: "Email is required" }, 400);
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      // Don't reveal if email exists for security
+      return successResponse(res, null, "If the email exists, an OTP has been sent", 200);
+    }
+
+    // Generate OTP
+    const generateOtp = `${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const htmlEmail = `
+    <html>
+      <body>
+        <h2>Password Reset OTP</h2>
+        <p>Your OTP for password reset is: <strong>${generateOtp}</strong></p>
+        <p>This OTP is valid for 10 minutes.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      </body>
+    </html>`;
+
+    await sendMail(email, "Password Reset - CFC Wallet", htmlEmail);
+    const encryptedOtp = await encryptData(generateOtp);
+
+    return successResponse(res, { token: encryptedOtp }, "OTP sent successfully", 200);
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};
+
+
+/**
+ * Reset password with OTP verification
+ */
+exports.resetPasswordWithOTP = async (req, res) => {
+  try {
+    const { email, token, pin, newPassword } = req.body;
+
+    if (!email || !token || !pin || !newPassword) {
+      return errorResponse(res, { message: "All fields are required" }, 400);
+    }
+
+    if (newPassword.length < 8) {
+      return errorResponse(res, { message: "Password must be at least 8 characters long" }, 400);
+    }
+
+    // Verify OTP
+    const decrypted = await deEncryption(token);
+    if (decrypted.message !== pin) {
+      return errorResponse(res, { message: "Invalid OTP" }, 400);
+    }
+
+    // Find user and update password
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return errorResponse(res, { message: "User not found" }, 404);
+    }
+
+    await user.update({ password: newPassword });
+
+    return successResponse(res, null, "Password reset successfully", 200);
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return errorResponse(res, { message: "Internal server error" }, 500);
+  }
+};

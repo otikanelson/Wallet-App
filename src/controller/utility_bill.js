@@ -1,6 +1,18 @@
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { getSagecloudToken } = require('../config/sagecloud_auth');
+const { 
+    TEST_MODE, 
+    mockAirtimePurchase, 
+    mockDataPurchase,
+    mockElectricityPurchase,
+    mockTVPurchase,
+    mockDataPlans,
+    mockTVPackages,
+    mockElectricityDISCOs,
+    mockValidateMeter,
+    mockValidateSmartCard
+} = require('../config/test_mode');
 
 const BASE_URL = 'https://sagecloud.ng/api';
 
@@ -12,6 +24,14 @@ async function purchaseAirtime(
     amountRecharge
 ) {
     try {
+        console.log('purchaseAirtime called with:', { mtn, mtnVtu, userPhone, amountRecharge });
+        
+        // Use mock response in test mode
+        if (TEST_MODE) {
+            console.log('TEST MODE: Returning mock airtime purchase response');
+            return mockAirtimePurchase(mtn, mtnVtu, userPhone, amountRecharge);
+        }
+        
         // Step 1: Get the access token
         const accessTokenResponse = await getSagecloudToken();
         const token = accessTokenResponse?.access_token;
@@ -20,6 +40,7 @@ async function purchaseAirtime(
             throw new Error('Access token is missing or invalid.');
         }
 
+        console.log('SageCloud token obtained successfully');
 
         // Step 2: Define the airtime purchase data
         const airtimePayload = {
@@ -30,6 +51,7 @@ async function purchaseAirtime(
             amount: amountRecharge
         };
 
+        console.log('Airtime payload:', airtimePayload);
         
         // Step 3: Send the POST request
         const response = await axios.post(`${BASE_URL}/v2/airtime`, airtimePayload, {
@@ -40,10 +62,16 @@ async function purchaseAirtime(
             }
         });
 
+        console.log('SageCloud airtime API response:', response.data);
         return response.data;
 
     } catch (error) {
-        const errData = error.response?.data || error.message;
+        console.error('purchaseAirtime error:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        const errData = error.response?.data || { message: error.message };
         throw errData;
     }
 }
@@ -141,6 +169,15 @@ async function purchaseTV(
 // Function to get data available 
 async function getDataAvailable(network = 'MTNDATA') {
     try {
+        // Use mock response in test mode
+        if (TEST_MODE) {
+            console.log('TEST MODE: Returning mock data plans');
+            return {
+                status: 'success',
+                data: mockDataPlans[network] || []
+            };
+        }
+        
         // Step 1: Get the access token
         const accessTokenResponse = await getSagecloudToken();
         const token = accessTokenResponse?.access_token;
@@ -149,10 +186,7 @@ async function getDataAvailable(network = 'MTNDATA') {
             throw new Error('Access token is missing or invalid.');
         }
 
-
-        
-        
-        // Step 3: Recieve the GET request
+        // Step 2: Receive the GET request
         const response = await axios.get(`${BASE_URL}/v2/internet/data/lookup?provider=${network}`, {
             headers: {
                 'Accept': 'application/json',
@@ -164,8 +198,16 @@ async function getDataAvailable(network = 'MTNDATA') {
         return response.data;
 
     } catch (error) {
-        const errData = error.response?.data || error.message;
-        throw error;
+        console.error('Get data available error:', {
+            network,
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        
+        // Re-throw with more context
+        const errData = error.response?.data || { message: error.message };
+        throw errData;
     }
 }
 
@@ -222,6 +264,15 @@ async function purchaseData(
 
 async function getDataElectricity() {
     try {
+        // Use mock response in test mode
+        if (TEST_MODE) {
+            console.log('TEST MODE: Returning mock electricity providers');
+            return {
+                status: 'success',
+                data: mockElectricityDISCOs
+            };
+        }
+
         // Step 1: Get the access token
         const accessTokenResponse = await getSagecloudToken();
         const token = accessTokenResponse?.access_token;
@@ -324,6 +375,18 @@ async function validateTVBiller(billerId , meterNumber) {
 // Function to fetch the available tv billers
 async function getDataTV() {
     try {
+        // Use mock response in test mode
+        if (TEST_MODE) {
+            console.log('TEST MODE: Returning mock TV providers');
+            return {
+                status: 'success',
+                data: Object.keys(mockTVPackages).map(key => ({
+                    code: key,
+                    name: key.toUpperCase()
+                }))
+            };
+        }
+
         // Step 1: Get the access token
         const accessTokenResponse = await getSagecloudToken();
         const token = accessTokenResponse?.access_token;
@@ -354,6 +417,16 @@ async function getDataTV() {
 // Function to fetch the available tv billers for each tv
 async function getDataTVOne(cable = 'gotv') {
     try {
+        // Use mock response in test mode
+        if (TEST_MODE) {
+            console.log(`TEST MODE: Returning mock TV packages for ${cable}`);
+            const packages = mockTVPackages[cable] || [];
+            return {
+                status: 'success',
+                data: packages
+            };
+        }
+
         // Step 1: Get the access token
         const accessTokenResponse = await getSagecloudToken();
         const token = accessTokenResponse?.access_token;

@@ -86,3 +86,25 @@ routerUtility.get(
 
 
 module.exports = routerUtility;
+
+
+// Transaction details
+routerUtility.get(
+  "/transaction/:transactionId",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]),
+  utilityController.getTransactionDetails
+);
+
+// Filtered transactions
+routerUtility.get(
+  "/transactions-filtered",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]),
+  utilityController.getUserTransactionsFiltered
+);
+
+// Recent beneficiaries
+routerUtility.get(
+  "/recent-beneficiaries",
+  verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]),
+  utilityController.getRecentBeneficiaries
+);

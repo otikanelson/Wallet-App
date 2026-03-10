@@ -10,5 +10,12 @@ routerPayment.post(
   payment.bank_paymentmethod
 );
 
+// Manual wallet funding for testing (user only - for testing purposes)
+routerPayment.post(
+  "/fund-wallet-manual",
+   verifyToken(["admin", "basic-admin", "standard-admin","user"], ["verified", "active"]) ,
+  payment.manual_fund_wallet
+);
+
 
 module.exports = routerPayment;

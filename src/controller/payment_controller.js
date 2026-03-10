@@ -62,3 +62,50 @@ exports.bank_paymentmethod = async (req, res) => {
 
     }
 };
+
+
+
+/**
+ * Manual wallet funding for testing (admin only)
+ * This bypasses the payment gateway for testing purposes
+ */
+exports.manual_fund_wallet = async (req, res) => {
+    const { amount } = req.body;
+    const id = req.user.id;
+
+    try {
+        // Validate amount
+        if (!amount || amount <= 0) {
+            return errorResponse(res, { message: 'Invalid amount' }, 400);
+        }
+
+        // Get user
+        const user = await User.findByPk(id, {
+            attributes: { exclude: ["password"] },
+        });
+
+        if (!user) {
+            return errorResponse(res, { message: 'User not found' }, 404);
+        }
+
+        // Calculate new balance
+        const currentBalance = parseFloat(user.totalFund || 0);
+        const newBalance = currentBalance + parseFloat(amount);
+
+        // Update user balance
+        await user.update({ totalFund: newBalance.toString() });
+
+        return successResponse(res, {
+            message: 'Wallet funded successfully',
+            data: {
+                previousBalance: currentBalance,
+                amountAdded: parseFloat(amount),
+                newBalance: newBalance,
+            }
+        }, 200);
+
+    } catch (err) {
+        console.error('Manual fund wallet error:', err);
+        return errorResponse(res, { message: err.message || 'Failed to fund wallet' }, 500);
+    }
+};

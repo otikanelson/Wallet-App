@@ -89,7 +89,7 @@ const User = sequelize.define(
 
     // Misc
     profilePicture: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(500),
       allowNull: false,
       defaultValue: DEFAULT_PROFILE_PIC,
     },
