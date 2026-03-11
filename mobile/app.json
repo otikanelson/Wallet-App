@@ -39,12 +39,10 @@
         "projectId": "659cbab6-b77f-430b-8bf3-14ca21ec5bf3"
       }
     },
-    "owner": "cfc-wallet",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/659cbab6-b77f-430b-8bf3-14ca21ec5bf3"
-    }
+    },
+    "owner": "cfc-wallet"
   }
 }

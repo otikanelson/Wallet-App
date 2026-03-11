@@ -27,7 +27,7 @@ const slides: OnboardingSlide[] = [
     title: 'Welcome to CFC Wallet',
     description:
       'The easiest way to buy airtime, data, and utility services – anytime, anywhere.',
-    image: require('../../../assets/images/illustration.png'),
+    image: require('../../../assets/images/Illustration.png'),
   },
   {
     id: '2',
