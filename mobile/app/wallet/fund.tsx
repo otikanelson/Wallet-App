@@ -7,21 +7,24 @@ import {
   TouchableOpacity,
   TextInput,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors, typography, spacing, borderRadius } from '@/constants/theme';
+import { colors, typography, spacing, borderRadius, getGridColumns } from '@/constants/theme';
 import { Button } from '@/components/common/Button';
 import { Toast } from '@/components/common/Toast';
 import { apiClient } from '@/api/client';
 
 export default function FundWallet() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as any });
 
+  const numColumns = getGridColumns(width);
   const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
@@ -144,6 +147,7 @@ export default function FundWallet() {
                 key={amt}
                 style={[
                   styles.quickAmountButton,
+                  { width: `${(100 / numColumns) - 2}%` },
                   amount === amt.toString() && styles.quickAmountButtonSelected,
                 ]}
                 onPress={() => setAmount(amt.toString())}
@@ -264,15 +268,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    justifyContent: 'space-between',
   },
   quickAmountButton: {
-    width: '31%',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: spacing.sm,
   },
   quickAmountButtonSelected: {
     backgroundColor: colors.primary,

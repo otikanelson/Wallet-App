@@ -7,13 +7,14 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { useUserStore } from '@/store/userStore';
-import { colors, typography, spacing, borderRadius } from '@/constants/theme';
+import { colors, typography, spacing, borderRadius, getResponsiveSize } from '@/constants/theme';
 
 interface SetTransactionPINScreenProps {
   navigation: any; // expo-router's router object
@@ -23,6 +24,7 @@ export const SetTransactionPINScreen: React.FC<
   SetTransactionPINScreenProps
 > = ({ navigation: router }) => {
   const { setTransactionPIN, checkTransactionPIN, isLoading, error, clearError } = useUserStore();
+  const { width } = useWindowDimensions();
 
   const [checkingPIN, setCheckingPIN] = useState(true);
   const [hasPIN, setHasPIN] = useState(false);
@@ -31,6 +33,8 @@ export const SetTransactionPINScreen: React.FC<
   const [pin, setPin] = useState(['', '', '', '']);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  const pinInputSize = getResponsiveSize(64, width);
 
   useEffect(() => {
     checkExistingPIN();
@@ -208,6 +212,7 @@ export const SetTransactionPINScreen: React.FC<
               ref={(ref) => { inputRefs.current[index] = ref; }}
               style={[
                 styles.pinInput,
+                { width: pinInputSize, height: pinInputSize },
                 digit && styles.pinInputFilled,
                 error && styles.pinInputError,
               ]}
@@ -295,8 +300,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   pinInput: {
-    width: 64,
-    height: 64,
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: borderRadius.md,

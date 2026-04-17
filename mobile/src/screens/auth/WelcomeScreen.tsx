@@ -4,15 +4,18 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   FlatList,
   ViewToken,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/common/Button';
-import { colors, typography, spacing, borderRadius } from '@/constants/theme';
+import { colors, typography, spacing, borderRadius, isLandscape } from '@/constants/theme';
 
-const { width } = Dimensions.get('window');
+// Import images at the top
+const topUpImage = require('../../../assets/images/Top_up.png');
+const tvImage = require('../../../assets/images/tv.png');
+const accessImage = require('../../../assets/images/access.png');
 
 interface OnboardingSlide {
   id: string;
@@ -27,21 +30,21 @@ const slides: OnboardingSlide[] = [
     title: 'Welcome to CFC Wallet',
     description:
       'The easiest way to buy airtime, data, and utility services – anytime, anywhere.',
-    image: require('../../../assets/images/Illustration.png'),
+    image: accessImage,
   },
   {
     id: '2',
     title: 'Buy Airtime & Data Instantly',
     description:
       'Recharge any network in Nigeria instantly. Save time with our quick top-up feature.',
-    image: require('../../../assets/images/Top_up.png'),
+    image: topUpImage,
   },
   {
     id: '3',
     title: 'Pay Your Bills',
     description:
       'Pay electricity bills and cable TV subscriptions with ease. All in one place.',
-    image: require('../../../assets/images/tv.png'),
+    image: tvImage,
   },
 ];
 
@@ -50,6 +53,8 @@ interface WelcomeScreenProps {
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation: router }) => {
+  const { width, height } = useWindowDimensions();
+  const isLandscapeMode = isLandscape(width, height);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -65,9 +70,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation: router
     itemVisiblePercentThreshold: 50,
   }).current;
 
+  const imageSize = isLandscapeMode ? Math.min(width * 0.4, height * 0.6) : width * 0.8;
+
   const renderSlide = ({ item }: { item: OnboardingSlide }) => (
-    <View style={styles.slide}>
-      <View style={styles.imageContainer}>
+    <View style={[styles.slide, { width }]}>
+      <View style={[styles.imageContainer, { width: imageSize, height: imageSize }]}>
         {item.image ? (
           <Image
             source={item.image}
@@ -141,16 +148,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   slide: {
-    width,
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+    justifyContent: 'center',
+    flex: 1,
   },
   imageContainer: {
-    width: width * 0.8,
-    height: width * 0.8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing.xxl,
   },
   image: {
     width: '100%',

@@ -91,3 +91,29 @@ export const shadows = {
     elevation: 8,
   },
 };
+
+// Responsive utilities
+export const getResponsiveSize = (baseSize: number, screenWidth: number): number => {
+  const scale = screenWidth / 375; // Base on iPhone SE width
+  return Math.round(baseSize * Math.min(scale, 1.3)); // Cap at 1.3x for tablets
+};
+
+export const getResponsiveTypography = (baseStyle: any, screenWidth: number) => {
+  const scale = screenWidth / 375;
+  const scaleFactor = Math.min(scale, 1.2); // Cap at 1.2x
+  return {
+    ...baseStyle,
+    fontSize: Math.round(baseStyle.fontSize * scaleFactor),
+    lineHeight: Math.round(baseStyle.lineHeight * scaleFactor),
+  };
+};
+
+export const getGridColumns = (screenWidth: number): number => {
+  if (screenWidth > 768) return 4; // Tablets
+  if (screenWidth > 600) return 3; // Large phones
+  return 2; // Standard phones
+};
+
+export const isTablet = (screenWidth: number): boolean => screenWidth > 600;
+
+export const isLandscape = (screenWidth: number, screenHeight: number): boolean => screenWidth > screenHeight;

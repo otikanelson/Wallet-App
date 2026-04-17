@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CFC Wallet",
-    "slug": "cfc-wallet-app",
+    "slug": "cfc-wallet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.jpeg",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cfcwallet.app"
+      "bundleIdentifier": "com.me.cfcwallet.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.jpeg",
         "backgroundColor": "#1E3A8A"
       },
-      "package": "com.cfcwallet.app"
+      "package": "com.me.cfcwallet.v2"
     },
     "web": {},
     "plugins": [
@@ -36,13 +36,8 @@
         "origin": false
       },
       "eas": {
-        "projectId": "659cbab6-b77f-430b-8bf3-14ca21ec5bf3"
+        "projectId": "0624ff0e-ad55-40ae-a9a2-4568de08ae92"
       }
-    },
-    "runtimeVersion": "1.0.0",
-    "updates": {
-      "url": "https://u.expo.dev/659cbab6-b77f-430b-8bf3-14ca21ec5bf3"
-    },
-    "owner": "cfc-wallet"
+    }
   }
 }

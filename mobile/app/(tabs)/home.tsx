@@ -7,18 +7,23 @@ import {
   TouchableOpacity,
   Image,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useUserStore } from '@/store/userStore';
-import { colors, typography, spacing, borderRadius } from '@/constants/theme';
+import { colors, typography, spacing, borderRadius, getGridColumns, getResponsiveTypography, isTablet } from '@/constants/theme';
 
 export default function Home() {
   const router = useRouter();
   const { user, fetchUser } = useUserStore();
+  const { width } = useWindowDimensions();
   const [balanceVisible, setBalanceVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const numColumns = getGridColumns(width);
+  const isTabletView = isTablet(width);
 
   useEffect(() => {
     fetchUser();
@@ -138,11 +143,14 @@ export default function Home() {
         {/* Quick Access */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Access</Text>
-          <View style={styles.quickAccessGrid}>
+          <View style={[styles.quickAccessGrid, { flexWrap: 'wrap' }]}>
             {quickAccessItems.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                style={styles.quickAccessItem}
+                style={[
+                  styles.quickAccessItem,
+                  { width: `${(100 / numColumns) - 2}%` },
+                ]}
                 onPress={() => router.push(item.route as any)}
               >
                 <View
@@ -288,13 +296,14 @@ const styles = StyleSheet.create({
   quickAccessGrid: {
     flexDirection: 'row',
     gap: spacing.md,
+    justifyContent: 'space-between',
   },
   quickAccessItem: {
-    flex: 1,
     backgroundColor: colors.surface,
     padding: spacing.lg,
     borderRadius: borderRadius.md,
     alignItems: 'center',
+    marginBottom: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

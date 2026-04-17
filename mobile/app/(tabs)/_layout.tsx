@@ -1,8 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWindowDimensions } from 'react-native';
+import { colors, isLandscape } from '@/constants/theme';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const isLandscapeMode = isLandscape(width, height);
+
   return (
     <Tabs
       screenOptions={{
@@ -13,12 +19,12 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 60,
+          height: isLandscapeMode ? 50 + Math.max(insets.bottom, 0) : 60 + Math.max(insets.bottom, 0),
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: isLandscapeMode ? 10 : 12,
           fontWeight: '600',
         },
       }}
