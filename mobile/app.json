@@ -2,7 +2,7 @@
   "expo": {
     "name": "CFC Wallet",
     "slug": "cfc-wallet",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.jpeg",
     "userInterfaceStyle": "light",
@@ -36,7 +36,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "0624ff0e-ad55-40ae-a9a2-4568de08ae92"
+        "projectId": "be905f06-cb6e-47bd-a982-156c144a0c48"
       }
     }
   }

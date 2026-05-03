@@ -57,7 +57,8 @@ const initializeDatabase = async () => {
     console.log('📊 Models registered:', Object.keys(sequelize.models).join(', '));
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
-    process.exit(1);
+    // Do not call process.exit(1) in serverless environments (e.g. Vercel)
+    // The error will surface naturally on the first request
   }
 };
 
