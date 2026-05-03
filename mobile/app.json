@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/images/icon.jpeg",
         "backgroundColor": "#1E3A8A"
       },
-      "package": "com.me.cfcwallet.v2"
+      "package": "cfcwallet.app"
     },
     "web": {},
     "plugins": [
