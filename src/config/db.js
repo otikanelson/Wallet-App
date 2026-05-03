@@ -1,4 +1,6 @@
 const { Sequelize } = require('sequelize');
+// Explicitly require mysql2 so bundlers (e.g. Vercel) include it in the function bundle
+require('mysql2');
 
 const DB_NAME     = process.env.DB_NAME     || 'vtu_platform';
 const DB_USER     = process.env.DB_USER     || 'root';
