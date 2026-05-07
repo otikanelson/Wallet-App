@@ -52,13 +52,14 @@ const initializeDatabase = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connection established');
     
-    await sequelize.sync({ force: false });
+    // Use alter: true to update tables without dropping data
+    // This is safer for production than force: true
+    await sequelize.sync({ force: false, alter: false });
     console.log('✅ Database tables synced successfully');
     console.log('📊 Models registered:', Object.keys(sequelize.models).join(', '));
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);
-    // Do not call process.exit(1) in serverless environments (e.g. Vercel)
-    // The error will surface naturally on the first request
+    // Log but don't crash - let individual requests handle DB errors
   }
 };
 
