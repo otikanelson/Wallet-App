@@ -21,9 +21,11 @@ const sequelize = DB_DIALECT === 'sqlite'
       dialect: 'mysql',
       logging: false,
       dialectOptions: {
-        // Required for Aiven — enforces SSL on the connection
+        // SSL configuration for cloud databases (Aiven, PlanetScale, etc.)
         ssl: {
-          rejectUnauthorized: true,
+          // Set to false for self-signed certificates or development
+          // Set to true for production with valid certificates
+          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
         },
       },
     });

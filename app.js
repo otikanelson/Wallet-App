@@ -126,6 +126,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint
+app.get(`${process.env.API_PREFIX || '/api/v1'}/health`, async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.status(200).json({
+      success: true,
+      message: 'Server is healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server is unhealthy',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // API routes
 const apiPrefix = process.env.API_PREFIX || '/api/v1';
 app.use(apiPrefix, routerUser);
