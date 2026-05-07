@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   RESET_PASSWORD: '/reset-password',
   CHANGE_PASSWORD: '/change-password',
   
+  
   // User
   GET_CURRENT_USER: '/user',
   UPDATE_USER: '/user',
